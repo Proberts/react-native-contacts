@@ -2,6 +2,10 @@
 # React Native Contacts
 Rx support with [react-native-contacts-rx](https://github.com/JeanLebrument/react-native-contacts-rx)
 
+Callback-based API: `require('react-native-contacts')`
+
+Promise-based API: `require('react-native-contacts/async')`
+
 ## Status
 * Preliminary iOS and Android support
 * API subject to revision, changelog in release notes  
@@ -34,6 +38,8 @@ Rx support with [react-native-contacts-rx](https://github.com/JeanLebrument/reac
 
 `requestPermission` (callback) - request permission to access Contacts
 
+`getGroups` (callback) - get a list of all contact groups and their IDs
+
 ## contact object
 The following contact fields are supported on iOS and Android. Where a field label is indicated, the Contact field populates the native field with as the label.
 
@@ -56,7 +62,7 @@ The following contact fields are supported on iOS and Android. Where a field lab
 | note       | String     | Note about contact. Appears in "Notes" on native Contact Manager
 | birthday   | Object     | The contact's birthday, with or without year, as ```{ year: int, month: int, day: int }```[1]
 | thumbnailPath | String  | A 'file://' URL pointing to the contact's thumbnail image on the native device filesystem. See [Notes on adding and updating thumbnailPath](#notes-on-adding-and-updatring-thumbnailPath)
-
+| groupID   | Array     | Array of strings containing all the groups associated with this contact.
 
 [1] Android: Not all contact managers show birthday, however value can be written, read, and synced
 
