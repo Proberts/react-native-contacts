@@ -16,15 +16,20 @@ Promise-based API: `require('react-native-contacts/async')`
 | `addContact` | ✔ | ✔ |
 | `updateContact` | ✔ | ✔ |
 | `deleteContact` | ✔ | ✔ |
+| `get with filters` | 😞 | 😞 |
 | get with options | 😞 | 😞 |
 | groups  | 😞 | 😞 |
 
 
 
 ## API
-`getAll` (callback) - returns *all* contacts as an array of objects
+`getAll` (callback) - returns *all* contacts as an array of objects, including only the fields included in the filter[] array.
 
-`getAllWithoutPhotos` - same as `getAll` on Android, but on iOS it will not return uris for contact photos (because there's a significant overhead in creating the images)
+`getAllWithFilter` (filter, callback) returns *all* contacts as an array of objects, including only the fields included in the filter[] array. (see `contact filter`)
+
+`getMatching` (contact, filter) - Returns all contacts that match the details in Contact, including only the details incuded in the filter[] array. (see `contact filter`)
+
+`getAllWithoutPhotos` - same as `getAll` on Android, but on iOS it will not return uris for contact photos (because there's a significant overhead in creating the images) Depreciated: use getAll( RNC.FILTER_allButPhotos)
 
 `getPhotoForId` (contactId, callback) - returns a URI (or null) for a contacts photo
 
@@ -46,9 +51,11 @@ The following contact fields are supported on iOS and Android. Where a field lab
 | Key Name   | Value Type | Description |
 |------------|------------|-------------|
 | recordID   | Integer    | (Read-only) Native contact manger record ID for this contact. Returned by getAll() and used to indicate contact record for updateContact(). Ignored by addContact(). Value is native platform dependent.
+| namePrefix | String     | A name prefix such as Mr., Ms., Mme., Dr., etc
 | familyName | String     | Family name or "last name"
 | givenName  | String     | Given name or "first name"
-| middleName | String     | Middle name or names
+| middleName | String     | Middle name or nam
+| nameSuffix | String     | A name suffix such as Jr., Sr., III, etc.es
 | nickName   | String     | Contact's nickname
 | phoneticFamilyName | String | Phonetic representation of familyName
 | phoneticMiddleName | String | Phonetic representation of middleName
@@ -64,7 +71,7 @@ The following contact fields are supported on iOS and Android. Where a field lab
 | thumbnailPath | String  | A 'file://' URL pointing to the contact's thumbnail image on the native device filesystem. See [Notes on adding and updating thumbnailPath](#notes-on-adding-and-updatring-thumbnailPath)
 | groupID   | Array     | Array of strings containing all the groups associated with this contact.
 
-[1] Android: Not all contact managers show birthday, however value can be written, read, and synced
+[1] Android: Not all contact managers show birthday, however value can be written, read, and synced.
 
 #### phoneNumbers
 
@@ -194,6 +201,27 @@ When calling updateContact():
   thumbnailPath: "file:///device/path/to/image.jpg",
 }
 ```
+## Filters
+
+Filters allow you to pass an array of detail types to be returned by a get operation.
+
+| Filter Name | Info type |
+|-------------|-----------|
+|FILTER_All | All supported field types (predefined array)
+|FILTER_AllButPhotos | All supported field types except photos (predefined array)
+| | |
+|FILTER_Email |
+|FILTER_Phone |
+|FILTER_Name |
+|FILTER_PostalAddress |
+|FILTER_Organization |
+|FILTER_Website|
+|FILTER_Note|
+|FILTER_Event|
+|FILTER_Nickname|
+|FILTER_Photo|
+|FILTER_Group|
+
 
 ## Usage
 `getAll` is a database intensive process, and can take a long time to complete depending on the size of the contacts list. Because of this, it is recommended you access the `getAll` method before it is needed, and cache the results for future use.
