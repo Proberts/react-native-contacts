@@ -41,6 +41,8 @@ public class ContactsProvider {
         add(StructuredName.GIVEN_NAME);
         add(StructuredName.MIDDLE_NAME);
         add(StructuredName.FAMILY_NAME);
+        add(StructuredName.PREFIX);
+        add(StructuredName.SUFFIX);
         add(StructuredName.PHONETIC_GIVEN_NAME);
         add(StructuredName.PHONETIC_MIDDLE_NAME);
         add(StructuredName.PHONETIC_FAMILY_NAME);
@@ -197,6 +199,8 @@ public class ContactsProvider {
                 contact.phoneticGivenName  = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_GIVEN_NAME));
                 contact.phoneticMiddleName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_MIDDLE_NAME));
                 contact.phoneticFamilyName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_FAMILY_NAME));
+                contact.namePrefix = cursor.getString(cursor.getColumnIndex(StructuredName.PREFIX));
+                contact.nameSuffix = cursor.getString(cursor.getColumnIndex(StructuredName.SUFFIX));
             } else if (mimeType.equals(Phone.CONTENT_ITEM_TYPE)) {
                 String phoneNumber = cursor.getString(cursor.getColumnIndex(Phone.NUMBER));
                 int type = cursor.getInt(cursor.getColumnIndex(Phone.TYPE));
@@ -348,6 +352,8 @@ public class ContactsProvider {
         private String givenName = "";
         private String middleName = "";
         private String familyName = "";
+        private String namePrefix = "";
+        private String nameSuffix = "";
         private String phoneticGivenName = "";
         private String phoneticMiddleName = "";
         private String phoneticFamilyName = "";
@@ -373,6 +379,8 @@ public class ContactsProvider {
             contact.putString("givenName", TextUtils.isEmpty(givenName) ? displayName : givenName);
             contact.putString("middleName", middleName);
             contact.putString("familyName", familyName);
+            contact.putString("namePrefix", namePrefix);
+            contact.putString("nameSuffix", nameSuffix);
             contact.putString("phoneticGivenName", phoneticGivenName);
             contact.putString("phoneticMiddleName", phoneticMiddleName);
             contact.putString("phoneticFamilyName", phoneticFamilyName);

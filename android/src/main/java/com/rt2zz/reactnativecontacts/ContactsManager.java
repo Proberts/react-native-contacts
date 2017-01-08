@@ -181,6 +181,8 @@ public class ContactsManager extends ReactContextBaseJavaModule {
         String phoneticGivenName  = contact.hasKey("phoneticGivenName" ) ? contact.getString("phoneticGivenName" ) : null;
         String phoneticMiddleName = contact.hasKey("phoneticMiddleName") ? contact.getString("phoneticMiddleName") : null;
         String phoneticFamilyName = contact.hasKey("phoneticFamilyName") ? contact.getString("phoneticFamilyName") : null;
+        String namePrefix = contact.hasKey("namePrefix") ? contact.getString("namePrefix") : null;
+        String nameSuffix = contact.hasKey("nameSuffix") ? contact.getString("nameSuffix") : null;
         if(update==true) {
             op = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
                  .withSelection(ContactsContract.Data.CONTACT_ID + "=?", new String[] {recordID});
@@ -194,7 +196,9 @@ public class ContactsManager extends ReactContextBaseJavaModule {
           .withValue(StructuredName.FAMILY_NAME, familyName)
           .withValue(StructuredName.PHONETIC_GIVEN_NAME, phoneticGivenName)
           .withValue(StructuredName.PHONETIC_MIDDLE_NAME, phoneticMiddleName)
-          .withValue(StructuredName.PHONETIC_FAMILY_NAME, phoneticFamilyName);
+          .withValue(StructuredName.PHONETIC_FAMILY_NAME, phoneticFamilyName)
+          .withValue(StructuredName.PREFIX, namePrefix)
+          .withValue(StructuredName.SUFFIX, nameSuffix);
         ops.add(op.build());
 
         // Phone Numbers
