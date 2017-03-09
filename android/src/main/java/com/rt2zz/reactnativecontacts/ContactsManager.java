@@ -360,7 +360,8 @@ public class ContactsManager extends ReactContextBaseJavaModule {
         try {
             ContentResolver cr = ctx.getContentResolver();
             ContentProviderResult[] results = cr.applyBatch(ContactsContract.AUTHORITY, ops);
-            rawContactId = ContentUris.parseId(results[0].uri);
+            rawContactId = 0;
+            if( !update ) rawContactId = ContentUris.parseId(results[0].uri);
         } catch (Exception e) {
             if(callback != null) callback.invoke(e.toString());
             return 0;
