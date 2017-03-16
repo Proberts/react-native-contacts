@@ -356,11 +356,10 @@ public class ContactsManager extends ReactContextBaseJavaModule {
 
         //Add the contact and get the new rawContactId
         Context ctx = getReactApplicationContext();
-        long rawContactId;
+        long rawContactId = 0;
         try {
             ContentResolver cr = ctx.getContentResolver();
             ContentProviderResult[] results = cr.applyBatch(ContactsContract.AUTHORITY, ops);
-            rawContactId = 0;
             if( !update ) rawContactId = ContentUris.parseId(results[0].uri);
         } catch (Exception e) {
             if(callback != null) callback.invoke(e.toString());
@@ -393,8 +392,8 @@ public class ContactsManager extends ReactContextBaseJavaModule {
             }
         }
 
+        if(callback != null) callback.invoke(null, Long.valueOf(rawContactId).toString());
         return rawContactId;
-
     }
 
     /*

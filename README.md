@@ -151,9 +151,11 @@ When calling updateContact():
 {
   recordID: 1,
 
+  namePrefix: "Dr.",
   familyName: "Jung",
   givenName: "Carl",
   middleName: "C.",
+  nameSuffix: "Sr.",
   nickName: "Carl-o",
   phoenticGivenName: "CAR-el",
   phoneticFamilyName: "YUH-ng",
