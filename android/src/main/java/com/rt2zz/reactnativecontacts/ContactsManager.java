@@ -153,6 +153,36 @@ public class ContactsManager extends ReactContextBaseJavaModule {
     }
 
     /*
+     * Get the OP for either new (recordID = null) or update action
+     *     array/labelled types pass a type, otherwise -1
+     */
+    private ContentProviderOperation.Builder getOp(ArrayList<ContentProviderOperation> ops, String recordID, String mimeType, String labelType, int labelIndex, String custom) {
+      ContentProviderOperation.Builder op;
+
+      if(recordID!=null) { //update
+        String sQuery = ContactsContract.Data.RAW_CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?";
+        String[] sFill;
+        if(labelType!=null) {
+          sQuery += " AND " + labelType + "=?";
+          sFill = new String[] {"" + recordID, "" + mimeType, "" + labelIndex };
+        } else {
+          sFill = new String[] {"" + recordID, "" + mimeType };
+        }
+          ops.add(ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
+            .withSelection(sQuery, sFill).build());
+          op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+              .withValue(ContactsContract.Data.RAW_CONTACT_ID, recordID);
+
+      } else { // new
+
+          op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+               .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
+      }
+
+      return op.withValue(ContactsContract.Data.MIMETYPE, mimeType);
+    }
+
+    /*
      * Write contact details, either new or update, return rawContactId
      */
     private long writeContact(Boolean update, ReadableMap contact, Callback callback, ReadableMap options) {
@@ -183,15 +213,8 @@ public class ContactsManager extends ReactContextBaseJavaModule {
         String phoneticFamilyName = contact.hasKey("phoneticFamilyName") ? contact.getString("phoneticFamilyName") : null;
         String namePrefix = contact.hasKey("namePrefix") ? contact.getString("namePrefix") : null;
         String nameSuffix = contact.hasKey("nameSuffix") ? contact.getString("nameSuffix") : null;
-        if(update==true) {
-            op = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
-                 .withSelection(ContactsContract.Data.CONTACT_ID + "=?", new String[] {recordID});
-        } else {
-            op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-        }
-        op.withValue(ContactsContract.Data.MIMETYPE, StructuredName.CONTENT_ITEM_TYPE)
-          .withValue(StructuredName.GIVEN_NAME, givenName)
+        op = getOp(ops, recordID, StructuredName.CONTENT_ITEM_TYPE,null,0,null);
+        op.withValue(StructuredName.GIVEN_NAME, givenName)
           .withValue(StructuredName.MIDDLE_NAME, middleName)
           .withValue(StructuredName.FAMILY_NAME, familyName)
           .withValue(StructuredName.PHONETIC_GIVEN_NAME, phoneticGivenName)
@@ -201,20 +224,20 @@ public class ContactsManager extends ReactContextBaseJavaModule {
           .withValue(StructuredName.SUFFIX, nameSuffix);
         ops.add(op.build());
 
+
         // Phone Numbers
         Map<String, String> phoneNumbers = mapReadableArrayKVS(contact, "phoneNumbers", "label", "number");
         if(phoneNumbers != null) {
             for (Map.Entry<String, String> kvpair : phoneNumbers.entrySet()) {
-                if(update==true) {
-                    op = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
-                         .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + " = ?", new String[] {recordID, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE});
-                } else {
-                    op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                         .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-                }
-                op.withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
-                  .withValue(CommonDataKinds.Phone.NUMBER, kvpair.getValue())
-                  .withValue(CommonDataKinds.Phone.TYPE, mapStringToPhoneType(kvpair.getKey()));
+                int typeID = mapStringToPhoneType(kvpair.getKey());
+                op = getOp(ops, recordID,
+                  ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE,
+                  ContactsContract.CommonDataKinds.Phone.TYPE,
+                  typeID,
+                  null
+                );
+                op.withValue(CommonDataKinds.Phone.NUMBER, kvpair.getValue())
+                  .withValue(CommonDataKinds.Phone.TYPE, typeID);
                 ops.add(op.build());
             }
         }
@@ -223,16 +246,14 @@ public class ContactsManager extends ReactContextBaseJavaModule {
         Map<String, String> emailAddresses = mapReadableArrayKVS(contact, "emailAddresses", "label", "email");
         if(emailAddresses != null) {
             for (Map.Entry<String, String> kvpair : emailAddresses.entrySet()) {
-                if(update==true) {
-                    op = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
-                         .withSelection(ContactsContract.Data.RAW_CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + " = ?", new String[] {recordID, ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE});
-                } else {
-                    op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                         .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-                }
-                op.withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Email.CONTENT_ITEM_TYPE)
-                  .withValue(CommonDataKinds.Email.ADDRESS, kvpair.getValue())
-                  .withValue(CommonDataKinds.Email.TYPE, mapStringToEmailType(kvpair.getKey()));
+                int typeID = mapStringToEmailType(kvpair.getKey());
+                op = getOp(ops, recordID,
+                  ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE,
+                  ContactsContract.CommonDataKinds.Email.TYPE,
+                  typeID,null
+                );
+                op.withValue(CommonDataKinds.Email.ADDRESS, kvpair.getValue())
+                  .withValue(CommonDataKinds.Email.TYPE, typeID);
                 ops.add(op.build());
             }
         }
@@ -241,16 +262,14 @@ public class ContactsManager extends ReactContextBaseJavaModule {
         Map<String, PostalAddress> postalAddresses = mapPostalAddressArray(contact, "postalAddresses");
         if(postalAddresses != null) {
             for (Map.Entry<String, PostalAddress> paddr : postalAddresses.entrySet()) {
-                if(update==true) {
-                    op = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
-                         .withSelection(ContactsContract.Data.RAW_CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + " = ?", new String[] {recordID, ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE });
-                } else {
-                    op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                         .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-                }
+                int typeID = mapStringToPostalType(paddr.getKey());
+                op = getOp(ops, recordID,
+                  ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE,
+                  ContactsContract.CommonDataKinds.StructuredPostal.TYPE,
+                  typeID,null
+                );
                 PostalAddress paddr_p = paddr.getValue();
-                op.withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)
-                  .withValue(ContactsContract.CommonDataKinds.StructuredPostal.TYPE, mapStringToPostalType(paddr.getKey()))
+                op.withValue(ContactsContract.CommonDataKinds.StructuredPostal.TYPE, typeID)
                   .withValue(ContactsContract.CommonDataKinds.StructuredPostal.STREET, paddr_p.street)
                   .withValue(ContactsContract.CommonDataKinds.StructuredPostal.CITY, paddr_p.city)
                   .withValue(ContactsContract.CommonDataKinds.StructuredPostal.REGION, paddr_p.region)
@@ -264,34 +283,24 @@ public class ContactsManager extends ReactContextBaseJavaModule {
         String company = contact.hasKey("company") ? contact.getString("company") : null;
         String jobTitle = contact.hasKey("jobTitle") ? contact.getString("jobTitle") : null;
         if (company != null || jobTitle != null) {
-            if(update==true) {
-                op = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
-                     .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + " = ?", new String[] {recordID, Organization.CONTENT_ITEM_TYPE});
-            } else {
-                op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                     .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-            }
-            op.withValue(ContactsContract.Data.MIMETYPE, Organization.CONTENT_ITEM_TYPE)
-              .withValue(Organization.COMPANY, company)
-              .withValue(Organization.TITLE, jobTitle);
-            ops.add(op.build());
+          op = getOp(ops, recordID, Organization.CONTENT_ITEM_TYPE,null,0,null);
+          op.withValue(Organization.COMPANY, company)
+            .withValue(Organization.TITLE, jobTitle);
+          ops.add(op.build());
         }
 
         // Websites
         Map<String, String> websites = mapReadableArrayKVS(contact, "websites", "label", "url");
         if(websites != null) {
             for (Map.Entry<String, String> kvpair : websites.entrySet()) {
-
-                if(update==true) {
-                    op = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
-                         .withSelection(ContactsContract.Data.RAW_CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + " = ?", new String[] {recordID, ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE});
-                } else {
-                    op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                         .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-                }
-                op.withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Website.CONTENT_ITEM_TYPE)
-                  .withValue(CommonDataKinds.Website.URL, kvpair.getValue())
-                  .withValue(CommonDataKinds.Website.TYPE, mapStringToWebsiteType(kvpair.getKey()));
+                int typeID = mapStringToWebsiteType(kvpair.getKey());
+                op = getOp(ops, recordID,
+                  ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE,
+                  ContactsContract.CommonDataKinds.Website.TYPE,
+                  typeID,null
+                );
+                op.withValue(CommonDataKinds.Website.URL, kvpair.getValue())
+                  .withValue(CommonDataKinds.Website.TYPE, typeID);
                 ops.add(op.build());
             }
         }
@@ -299,16 +308,9 @@ public class ContactsManager extends ReactContextBaseJavaModule {
         // Note
         String note = contact.hasKey("note") ? contact.getString("note") : null;
         if (note != null) {
-            if(update==true) {
-                op = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
-                     .withSelection(ContactsContract.Data.RAW_CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + " = ?", new String[] {recordID, ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE});
-            } else {
-                op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                     .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-            }
-            op.withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Note.CONTENT_ITEM_TYPE)
-              .withValue(CommonDataKinds.Note.NOTE, note);
-            ops.add(op.build());
+          op = getOp(ops, recordID, CommonDataKinds.Note.CONTENT_ITEM_TYPE,null,0,null);
+          op.withValue(CommonDataKinds.Note.NOTE, note);
+          ops.add(op.build());
         }
 
         // Birthday
@@ -320,15 +322,8 @@ public class ContactsManager extends ReactContextBaseJavaModule {
             else birthdayS+="--";    //no year
             if( bdate.hasKey("month")) birthdayS+=bdate.getInt("month");
             if( bdate.hasKey("day"  )) birthdayS+="-"+bdate.getInt("day");
-            if(update==true) {
-                op = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
-                     .withSelection(ContactsContract.Data.RAW_CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + " = ?",new String[] {recordID, ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE});
-            } else {
-                op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                     .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-            }
-            op.withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE)
-              .withValue(CommonDataKinds.Event.TYPE, CommonDataKinds.Event.TYPE_BIRTHDAY)
+            op = getOp(ops, recordID, CommonDataKinds.Event.CONTENT_ITEM_TYPE,null,0,null);
+            op.withValue(CommonDataKinds.Event.TYPE, CommonDataKinds.Event.TYPE_BIRTHDAY)
               .withValue(CommonDataKinds.Event.START_DATE, birthdayS);
             ops.add(op.build());
         }
@@ -336,16 +331,9 @@ public class ContactsManager extends ReactContextBaseJavaModule {
         // Nickname
         String nickname = contact.hasKey("nickName") ? contact.getString("nickName") : null;
         if (nickname != null) {
-            if(update==true) {
-                op = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
-                     .withSelection(ContactsContract.Data.RAW_CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + " = ?", new String[] {recordID, ContactsContract.CommonDataKinds.Nickname.CONTENT_ITEM_TYPE});
-            } else {
-                op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                     .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
-            }
-            op.withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Nickname.CONTENT_ITEM_TYPE)
-              .withValue(CommonDataKinds.Nickname.NAME, nickname);
-            ops.add(op.build());
+          op = getOp(ops, recordID, CommonDataKinds.Nickname.CONTENT_ITEM_TYPE,null,0,null);
+          op.withValue(CommonDataKinds.Nickname.NAME, nickname);
+          ops.add(op.build());
         }
 
         //Yield point comes after all operations on a single contact, but need to
@@ -360,7 +348,11 @@ public class ContactsManager extends ReactContextBaseJavaModule {
         try {
             ContentResolver cr = ctx.getContentResolver();
             ContentProviderResult[] results = cr.applyBatch(ContactsContract.AUTHORITY, ops);
-            if( !update ) rawContactId = ContentUris.parseId(results[0].uri);
+            if( !update ) {
+              rawContactId = ContentUris.parseId(results[0].uri);
+            } else {
+              rawContactId = Long.parseLong(recordID);
+            }
         } catch (Exception e) {
             if(callback != null) callback.invoke(e.toString());
             return 0;
