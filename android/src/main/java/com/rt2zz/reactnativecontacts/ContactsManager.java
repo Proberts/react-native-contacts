@@ -322,7 +322,12 @@ public class ContactsManager extends ReactContextBaseJavaModule {
             else birthdayS+="--";    //no year
             if( bdate.hasKey("month")) birthdayS+=bdate.getInt("month");
             if( bdate.hasKey("day"  )) birthdayS+="-"+bdate.getInt("day");
-            op = getOp(ops, recordID, CommonDataKinds.Event.CONTENT_ITEM_TYPE,null,0,null);
+            //op = getOp(ops, recordID, CommonDataKinds.Event.CONTENT_ITEM_TYPE,null,0,null);
+            op = getOp(ops, recordID,
+              CommonDataKinds.Event.CONTENT_ITEM_TYPE,
+              CommonDataKinds.Event.TYPE,
+              CommonDataKinds.Event.TYPE_BIRTHDAY,null
+            );
             op.withValue(CommonDataKinds.Event.TYPE, CommonDataKinds.Event.TYPE_BIRTHDAY)
               .withValue(CommonDataKinds.Event.START_DATE, birthdayS);
             ops.add(op.build());
