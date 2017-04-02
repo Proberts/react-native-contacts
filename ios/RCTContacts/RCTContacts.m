@@ -227,8 +227,9 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
     }
     NSString* strBirthday = [dateFormatter stringFromDate:(__bridge_transfer NSDate *)birthDate ];
     [contact setObject: strBirthday forKey:@"birthday"];
+  	CFRelease(birthDate);
   }
-  CFRelease(birthDate);
+
   ///////////////////////////////////
 
   //handle websites
@@ -269,12 +270,12 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
     NSString * postcode = CFDictionaryGetValue(dict, kABPersonAddressZIPKey);
     NSString * country = CFDictionaryGetValue(dict, kABPersonAddressCountryKey);
     NSMutableDictionary* address = [NSMutableDictionary dictionary];
-    [address setObject: addrLabel forKey:@"label"];
-    [address setObject: street forKey:@"street"];
-    [address setObject: city forKey:@"city"];
-    [address setObject: region forKey:@"region"];
-    [address setObject: postcode forKey:@"postcode"];
-    [address setObject: country forKey:@"country"];
+    if(addrLabel) [address setObject: addrLabel forKey:@"label"];
+    if(street) [address setObject: street forKey:@"street"];
+    if(city) [address setObject: city forKey:@"city"];
+    if(region) [address setObject: region forKey:@"region"];
+    if(postcode) [address setObject: postcode forKey:@"postcode"];
+    if(country) [address setObject: country forKey:@"country"];
     [postalAddresses addObject:address];
   }
   [contact setObject: postalAddresses forKey:@"postalAddresses"];
