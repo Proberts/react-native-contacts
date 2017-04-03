@@ -505,6 +505,7 @@ RCT_EXPORT_METHOD(updateContact:(NSDictionary *)contactData callback:(RCTRespons
   ABAddressBookSave(addressBookRef, &error);
   ////////////
   
+  NSNumber *recordID = [NSNumber numberWithInteger:(ABRecordGetRecordID(person))];
   CFRelease(addressBookRef);
   if (error != NULL)
   {
@@ -514,7 +515,7 @@ RCT_EXPORT_METHOD(updateContact:(NSDictionary *)contactData callback:(RCTRespons
     CFRelease(errorDesc);
   }
   else{
-    callback(@[[NSNull null]]);
+      callback(@[[NSNull null]], [recordID stringValue]);
   }
 }
 
