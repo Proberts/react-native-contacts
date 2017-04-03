@@ -171,6 +171,7 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
   [contact setObject: emailAddreses forKey:@"emailAddresses"];
   //end emails
   
+/* Removed to see if this is duplicate of Bin's code farther down
   NSMutableArray *postalAddresses = [[NSMutableArray alloc] init];
   ABMultiValueRef multiPostalAddresses = ABRecordCopyValue(person, kABPersonAddressProperty);
   for(CFIndex i=0;i<ABMultiValueGetCount(multiPostalAddresses);i++) {
@@ -209,7 +210,8 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
   }
   CFRelease(multiPostalAddresses);
   [contact setObject:postalAddresses forKey:@"postalAddresses"];
-
+*/
+    
   [contact setValue:[NSNumber numberWithBool:ABPersonHasImageData(person)] forKey:@"hasThumbnail"];
   if (withThumbnails) {
     [contact setObject: [self getABPersonThumbnailFilepath:person] forKey:@"thumbnailPath"];
@@ -227,8 +229,9 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
     }
     NSString* strBirthday = [dateFormatter stringFromDate:(__bridge_transfer NSDate *)birthDate ];
     [contact setObject: strBirthday forKey:@"birthday"];
+  	CFRelease(birthDate);
   }
-  CFRelease(birthDate);
+
   ///////////////////////////////////
 
   //handle websites
@@ -269,12 +272,12 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
     NSString * postcode = CFDictionaryGetValue(dict, kABPersonAddressZIPKey);
     NSString * country = CFDictionaryGetValue(dict, kABPersonAddressCountryKey);
     NSMutableDictionary* address = [NSMutableDictionary dictionary];
-    [address setObject: addrLabel forKey:@"label"];
-    [address setObject: street forKey:@"street"];
-    [address setObject: city forKey:@"city"];
-    [address setObject: region forKey:@"region"];
-    [address setObject: postcode forKey:@"postcode"];
-    [address setObject: country forKey:@"country"];
+    if(addrLabel) [address setObject: addrLabel forKey:@"label"];
+    if(street) [address setObject: street forKey:@"street"];
+    if(city) [address setObject: city forKey:@"city"];
+    if(region) [address setObject: region forKey:@"region"];
+    if(postcode) [address setObject: postcode forKey:@"postcode"];
+    if(country) [address setObject: country forKey:@"country"];
     [postalAddresses addObject:address];
   }
   [contact setObject: postalAddresses forKey:@"postalAddresses"];
@@ -504,6 +507,7 @@ RCT_EXPORT_METHOD(updateContact:(NSDictionary *)contactData callback:(RCTRespons
   ABAddressBookSave(addressBookRef, &error);
   ////////////
   
+  NSNumber *recordID = [NSNumber numberWithInteger:(ABRecordGetRecordID(record))];
   CFRelease(addressBookRef);
   if (error != NULL)
   {
@@ -513,7 +517,7 @@ RCT_EXPORT_METHOD(updateContact:(NSDictionary *)contactData callback:(RCTRespons
     CFRelease(errorDesc);
   }
   else{
-    callback(@[[NSNull null]]);
+      callback(@[[NSNull null], [recordID stringValue]]);
   }
 }
 
