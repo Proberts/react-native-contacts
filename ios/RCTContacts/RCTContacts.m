@@ -170,7 +170,7 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
   }
   [contact setObject: emailAddreses forKey:@"emailAddresses"];
   //end emails
-  
+
   NSMutableArray *postalAddresses = [[NSMutableArray alloc] init];
   ABMultiValueRef multiPostalAddresses = ABRecordCopyValue(person, kABPersonAddressProperty);
   for(CFIndex i=0;i<ABMultiValueGetCount(multiPostalAddresses);i++) {
@@ -214,7 +214,7 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
   if (withThumbnails) {
     [contact setObject: [self getABPersonThumbnailFilepath:person] forKey:@"thumbnailPath"];
   }
-  
+
   //handle birthday from contacts//
   CFDateRef birthDate = ABRecordCopyValue(person, kABPersonBirthdayProperty);
   NSDateFormatter *dateFormatter = nil;
@@ -252,7 +252,7 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
   }
   [contact setObject: websites forKey:@"websites"];
   //end websites
-  
+
   //handle postalAddresses
   NSMutableArray *postalAddresses = [[NSMutableArray alloc] init];
   ABMultiValueRef multiAddresses = ABRecordCopyValue(person, kABPersonAddressProperty);
@@ -279,7 +279,7 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
   }
   [contact setObject: postalAddresses forKey:@"postalAddresses"];
   //end postalAddresses
-  
+
   //handle note, nickName, phoneticGivenName, phoneticFamilyName, phoneticMiddleName, company, jobTitle//
   NSString *note = (__bridge_transfer NSString *)(ABRecordCopyValue(person, kABPersonNoteProperty));
   NSString *nickName = (__bridge_transfer NSString *)(ABRecordCopyValue(person, kABPersonNicknameProperty));
@@ -308,15 +308,15 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
 
         NSData *contactImageData = (__bridge NSData *)ABPersonCopyImageDataWithFormat(person, kABPersonImageFormatThumbnail);
         BOOL success = [[NSFileManager defaultManager] createFileAtPath:filepath contents:contactImageData attributes:nil];
-        
+
         if (!success) {
             NSLog(@"Unable to copy image");
             return @"";
         }
-        
+
         return filepath;
     }
-    
+
     return @"";
 }
 
@@ -420,48 +420,50 @@ RCT_EXPORT_METHOD(updateContact:(NSDictionary *)contactData callback:(RCTRespons
   ABRecordSetValue(record, kABPersonEmailProperty, multiEmail, nil);
   CFRelease(multiEmail);
   ABAddressBookSave(addressBookRef, &error);
- 
+
   //Add Profile Image//
   NSString *thumbnailPath = [contactData valueForKey:@"thumbnailPath"];
-  UIImage *img = [UIImage imageWithContentsOfFile:thumbnailPath];
-  NSData *dataRef = UIImagePNGRepresentation(img);
-  CFDataRef cfDataRef = CFDataCreate(NULL, [dataRef bytes], [dataRef length]);
-  ABPersonRemoveImageData(record, &error);
-  if (ABAddressBookSave(addressBookRef, &error))
-  {
-    ABPersonSetImageData(record, cfDataRef, &error);
-    ABAddressBookSave(addressBookRef, &error);
+  if(thumbnailPath != NULL) {
+    UIImage *img = [UIImage imageWithContentsOfFile:thumbnailPath];
+    NSData *dataRef = UIImagePNGRepresentation(img);
+    CFDataRef cfDataRef = CFDataCreate(NULL, [dataRef bytes], [dataRef length]);
+    ABPersonRemoveImageData(record, &error);
+    if (ABAddressBookSave(addressBookRef, &error))
+    {
+      ABPersonSetImageData(record, cfDataRef, &error);
+      ABAddressBookSave(addressBookRef, &error);
+    }
   }
   /////////////////////
-  
+
   //Add Birthday//
   id objBirthday = [contactData valueForKey:@"birthday"];
   NSString *strMonth = [objBirthday valueForKey:@"month"];
   NSString *strDay = [objBirthday valueForKey:@"day"];
   strDay = [NSString stringWithFormat:@"%i", strDay.intValue + 1];
-  
+
   NSDateFormatter* formatter = [[NSDateFormatter alloc] init];
   [formatter setDateFormat:@"dd.MM.yyyy"];
   NSDate *birthday = [formatter dateFromString:[NSString stringWithFormat:@"%@.%@.1604",strDay, strMonth]];
-  
+
   ABRecordSetValue(record, kABPersonBirthdayProperty,(__bridge CFDateRef)birthday, &error);
   ABAddressBookSave (addressBookRef,&error);
   ////////////////
-  
+
   //Add Website URLs//
   ABMutableMultiValueRef multiURL = ABMultiValueCreateMutable(kABMultiStringPropertyType);
   NSArray* urlArray = [contactData valueForKey:@"websites"];
   for (id urlData in urlArray) {
     NSString *label = [urlData valueForKey:@"label"];
     NSString *url = [urlData valueForKey:@"url"];
-    
+
     ABMultiValueAddValueAndLabel(multiURL, (__bridge CFStringRef) url, (__bridge CFStringRef) label, NULL);
   }
   ABRecordSetValue(record, kABPersonURLProperty, multiURL, nil);
   CFRelease(multiURL);
   ABAddressBookSave(addressBookRef, &error);
   ////////////////////
-  
+
   //Add Address//
   ABMultiValueRef addresses = ABMultiValueCreateMutable(kABMultiDictionaryPropertyType);
   NSArray* addressArray = [contactData valueForKey:@"postalAddresses"];
@@ -485,7 +487,7 @@ RCT_EXPORT_METHOD(updateContact:(NSDictionary *)contactData callback:(RCTRespons
   CFRelease(addresses);
   ABAddressBookSave(addressBookRef, &error);
   ////////////////////
-  
+
   //Add note, nickName, phoneticGivenName, phoneticFamilyName, phoneticMiddleName, company, jobTitle//
   NSString *note = [contactData valueForKey:@"note"];
   NSString *nickName = [contactData valueForKey:@"nickName"];
@@ -503,7 +505,7 @@ RCT_EXPORT_METHOD(updateContact:(NSDictionary *)contactData callback:(RCTRespons
   ABRecordSetValue(record, kABPersonJobTitleProperty, (__bridge CFStringRef) jobTitle, &error);
   ABAddressBookSave(addressBookRef, &error);
   ////////////
-  
+
   CFRelease(addressBookRef);
   if (error != NULL)
   {
