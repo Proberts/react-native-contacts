@@ -13,7 +13,7 @@ import java.util.List;
 
 public class ReactNativeContacts implements ReactPackage {
 
-    @Override
+    // Deprecated from RN 0.47.0
     public List<NativeModule> createNativeModules(
             ReactApplicationContext reactContext) {
         List<NativeModule> modules = new ArrayList<>();
